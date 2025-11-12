@@ -1,3 +1,4 @@
+import math
 
 # Drill 1.1.1
 
@@ -20,3 +21,30 @@ def complex_div(a1, b1, a2, b2):
     imag = (a2 * b1 - a1 * b2) / denom
     
     return (real, imag)
+
+# Drill 1.3.1
+
+def cart2pol(a, b):
+    ro = (a ** 2 + b ** 2) ** 0.5
+
+    theta = None
+
+    # the b/a division in formula causes problems for a == 0. Handle that separately.
+    if a == 0:
+
+        # If b is also 0, we should default theta to 0
+        theta = (b != 0) * math.pi / 2
+
+        # b < 0 means it's 3/2*pi radians, 1/2*pi otherwise
+        theta += (b < 0) * math.pi
+
+    else:
+        theta = math.atan(b / a)
+
+    return (ro, theta)
+
+def pol2cart(ro, theta):
+    a = ro * math.cos(theta)
+    b = ro * math.sin(theta)
+
+    return (a, b)
