@@ -1,4 +1,9 @@
 import math
+import random
+
+import matplotlib.pyplot as plt
+
+from matplotlib.animation import FuncAnimation
 
 # Drill 1.1.1
 
@@ -23,7 +28,6 @@ def complex_div(a1, b1, a2, b2):
     return (real, imag)
 
 # Drill 1.3.1
-
 def cart2pol(a, b):
     ro = (a ** 2 + b ** 2) ** 0.5
 
@@ -48,3 +52,104 @@ def pol2cart(ro, theta):
     b = ro * math.sin(theta)
 
     return (a, b)
+
+# Drill 1.3.2
+def animate_complex_transform(points, transform=(1, 0), max_graphed_coord=1, n_frames=20):
+
+    fig, ax = plt.subplots()
+    xdata, ydata = [], []
+    
+    zipped = list(zip(*points))
+    scatter = ax.scatter(zipped[0], zipped[1], label="complex datapoints")
+    scatter_transform = ax.scatter([1.], [0.], color='r', label="transform")
+    ax.set_aspect(1.)
+    ax.set_xlabel("real")
+    ax.set_ylabel("imaginary")
+    ax.grid()
+    ax.legend()
+
+    transform_polar = cart2pol(*transform)
+    ax.set_title(f"transform = {transform[0]:.5} + ({transform[1]:.5})i; ro={transform_polar[0]:.5}, theta={(transform_polar[1] / (2 * math.pi) * 360):.5}deg")
+
+    def init():
+        ax.set_xlim(-max_graphed_coord, max_graphed_coord)
+        ax.set_ylim(-max_graphed_coord, max_graphed_coord)
+        return scatter,
+
+    def update(frame):
+        partial_transform = frame[-1]
+        frame = frame[:-1]
+
+        scatter.set_offsets(frame)
+        scatter_transform.set_offsets([partial_transform])
+
+        return ax, scatter, scatter_transform
+
+    # Calculate a series of frames between unchanged and fully transformed points
+    frames = []
+
+    # Transform in stages: Show start state, scale, rotate, show end state
+    n_stages = 4
+
+    for frame_no in range(n_frames + 1):
+        frame = []
+
+        frames_per_stage = n_frames / n_stages
+        stage_frame_no = frame_no % frames_per_stage
+
+        # Note: Each partial transform is represented in polar. Polar
+        # coordinates fully separate scaling and rotation, which
+        # cannot be said for Cartesian representation. 
+        if frame_no < frames_per_stage:
+            # Show start state using trivial transform
+            partial_transform_polar = (1, 0)
+
+        elif frame_no < frames_per_stage * 2:
+            # Scale - average between 1.0 and target scale, weighted by frame
+            partial_transform_polar = (
+                (frames_per_stage - stage_frame_no) / frames_per_stage + transform_polar[0] * stage_frame_no / frames_per_stage,
+                0
+                )
+        elif frame_no < frames_per_stage * 3:
+            # Rotate
+            partial_transform_polar = (
+                transform_polar[0],
+                transform_polar[1] * stage_frame_no / frames_per_stage,
+                )
+        else:
+            # Show end state
+            partial_transform_polar = transform_polar
+
+        partial_transform = pol2cart(*partial_transform_polar)
+
+        for point in points:
+
+            frame_point = complex_mul(*point, *partial_transform)
+            frame.append(frame_point)
+
+        frame.append(partial_transform)
+        frames.append(frame)
+
+            
+    ani = FuncAnimation(fig, update, frames=frames, init_func=init, blit=True)
+
+    plt.show()
+            
+
+
+# Run this to just see animate_complex_transform in action
+def demo_complex_transform(n_points=10, span=10, transform_max_scale=3, custom_points=[], custom_transform=None):
+    points = [] if len(custom_points) == 0 else custom_points
+
+    if len(points) == 0:
+        for _ in range(n_points):
+            a = random.random() * span - span / 2
+            b = random.random() * span - span / 2
+            points.append((a, b))
+    
+    transform_polar_ro = cart2pol(*custom_transform)[0] if custom_transform is not None else (random.random() * 2 * transform_max_scale - transform_max_scale)
+    transform_polar_theta = cart2pol(*custom_transform)[1] if custom_transform is not None else (random.random() * 4 * math.pi - 2 * math.pi) 
+
+    transform = pol2cart(transform_polar_ro, transform_polar_theta) if custom_transform is None else custom_transform
+
+    animate_complex_transform(points, transform, max_graphed_coord=(1.1 * max(math.fabs(transform_polar_ro * span / 2), span / 2)))

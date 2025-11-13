@@ -12,6 +12,8 @@
     };
     bydon = pkgs.python3.withPackages (ps: with ps; [
       ipython
+      matplotlib
+      python-lsp-server
       ]);
   in {
     devShell = pkgs.mkShell {
