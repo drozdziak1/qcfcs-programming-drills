@@ -44,6 +44,15 @@ def cart2pol(a, b):
 
     else:
         theta = math.atan(b / a)
+        
+        # Since atan() gives values between -pi/2 .. pi/2, we need to
+        # adjust the offset using the original real and imaginary part's signs.
+        if a < 0:
+            if b >= 0:
+                theta += math.pi 
+            else:
+                theta -= math.pi
+
 
     return (ro, theta)
 
@@ -153,3 +162,11 @@ def demo_complex_transform(n_points=10, span=10, transform_max_scale=3, custom_p
     transform = pol2cart(transform_polar_ro, transform_polar_theta) if custom_transform is None else custom_transform
 
     animate_complex_transform(points, transform, max_graphed_coord=(1.1 * max(math.fabs(transform_polar_ro * span / 2), span / 2)))
+
+
+# Drill 1.3.3
+def complex_pol_mul(ro1, th1, ro2, th2):
+    return (ro1 * ro2, th1 + th2)
+
+def complex_pol_div(ro1, th1, ro2, th2):
+    return (ro1 / ro2, th1 - th2)
