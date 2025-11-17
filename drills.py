@@ -170,3 +170,32 @@ def complex_pol_mul(ro1, th1, ro2, th2):
 
 def complex_pol_div(ro1, th1, ro2, th2):
     return (ro1 / ro2, th1 - th2)
+
+# Drill 2.1.1
+
+# Generic for-each with dimension verification
+def complex_v_binary_op(v1, v2, binary_op):
+    len1 = len(v1)
+    len2 = len(v2)
+    if (len1 != len2):
+        raise InvalidArgument(f"vector mismatch: {len1} != {len2}")
+
+    ret = []
+
+    for elem1, elem2 in zip(v1, v2):
+        ret.append(binary_op(*elem1, *elem2))
+
+    return ret
+
+def complex_v_add_v(v1, v2):
+    return complex_v_binary_op(v1, v2, complex_add)
+
+def complex_v_inverse(v):
+    neg_mul_vec = [(-1, 0)] * len(v)
+
+    return complex_v_binary_op(v, neg_mul_vec, complex_mul)
+
+def complex_v_scalar_mul(a, b, v):
+    mul_vec = [(a, b)] * len(v)
+
+    return complex_v_binary_op(mul_vec, v, complex_mul)
