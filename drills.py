@@ -178,7 +178,7 @@ def complex_v_binary_op(v1, v2, binary_op):
     len1 = len(v1)
     len2 = len(v2)
     if (len1 != len2):
-        raise InvalidArgument(f"vector mismatch: {len1} != {len2}")
+        raise InvalidArgument(f"vector size mismatch: {len1} != {len2}")
 
     ret = []
 
@@ -190,12 +190,47 @@ def complex_v_binary_op(v1, v2, binary_op):
 def complex_v_add_v(v1, v2):
     return complex_v_binary_op(v1, v2, complex_add)
 
-def complex_v_inverse(v):
-    neg_mul_vec = [(-1, 0)] * len(v)
-
-    return complex_v_binary_op(v, neg_mul_vec, complex_mul)
-
 def complex_v_scalar_mul(a, b, v):
     mul_vec = [(a, b)] * len(v)
 
     return complex_v_binary_op(mul_vec, v, complex_mul)
+
+def complex_v_inverse(v):
+    return complex_v_scalar_mul(-1, 0, v)
+
+
+# Drill 2.2.1
+
+# Builds on the vector variant, verifies additional dimension
+def complex_m_binary_op(m1, m2, binary_op):
+    rows1 = len(m1)
+    rows2 = len(m2)
+
+    if (rows1 != rows2):
+        raise InvalidArgument(f"matrix row count mismatch: {rows1} != {rows2}")
+
+    ret = []
+
+    for row1, row2 in zip(m1, m2):
+        try:
+            ret.append(complex_v_binary_op(row1, row2, binary_op))
+        except InvalidArgument(msg):
+            raise InvalidArgument(f"matrix column count mismatch: {msg}")
+
+    return ret
+
+
+def complex_m_add_m(m1, m2):
+    return complex_m_binary_op(m1, m2, complex_add)
+
+def complex_m_scalar_mul(a, b, m):
+    ret = []
+
+    for row in m:
+        ret.append(complex_v_scalar_mul(a, b, row))
+
+    return ret
+
+def complex_m_inverse(m):
+    return complex_m_scalar_mul(-1, 0, m)
+
