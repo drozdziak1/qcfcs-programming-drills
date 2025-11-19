@@ -1,6 +1,8 @@
 import math
 import random
 
+from functools import reduce
+
 import matplotlib.pyplot as plt
 
 from matplotlib.animation import FuncAnimation
@@ -178,7 +180,7 @@ def complex_v_binary_op(v1, v2, binary_op):
     len1 = len(v1)
     len2 = len(v2)
     if (len1 != len2):
-        raise InvalidArgument(f"vector size mismatch: {len1} != {len2}")
+        raise ValueError(f"vector size mismatch: {len1} != {len2}")
 
     ret = []
 
@@ -207,15 +209,15 @@ def complex_m_binary_op(m1, m2, binary_op):
     rows2 = len(m2)
 
     if (rows1 != rows2):
-        raise InvalidArgument(f"matrix row count mismatch: {rows1} != {rows2}")
+        raise ValueError(f"matrix row count mismatch: {rows1} != {rows2}")
 
     ret = []
 
     for row1, row2 in zip(m1, m2):
         try:
             ret.append(complex_v_binary_op(row1, row2, binary_op))
-        except InvalidArgument(msg):
-            raise InvalidArgument(f"matrix column count mismatch: {msg}")
+        except ValueError(msg):
+            raise ValueError(f"matrix column count mismatch: {msg}")
 
     return ret
 
@@ -234,3 +236,51 @@ def complex_m_scalar_mul(a, b, m):
 def complex_m_inverse(m):
     return complex_m_scalar_mul(-1, 0, m)
 
+# Drill 2.2.2
+def complex_v_dot(v1, v2):
+    products_v = complex_v_binary_op(v1, v2, complex_mul)
+
+    return reduce(lambda accum, prod: complex_add(*accum, *prod), products_v)
+
+def complex_m_transpose(m):
+    rows = len(m)
+
+    if (rows == 0):
+        return []
+    
+    columns = len(m[0])
+
+    # Note: ret has inverted indices, thus rows are used for columns
+    # and vice versa.
+    ret = [[None for _ in range(rows)] for _ in range(columns)]
+
+    for i in range(rows):
+        for j in range(columns):
+            ret[j][i] = m[i][j]
+
+    return ret
+        
+
+
+def complex_matmul(m1, m2):
+    rows = len(m1)
+
+    # Transpose for easier dimension verification/column access
+    m1t = complex_m_transpose(m1)
+    m2t = complex_m_transpose(m2)
+
+    columns = len(m2t)
+
+
+    if (len(m1t) != len(m2)):
+        raise ValueError(f"Matrix dimension mismatch: {len(m1t)} columns does not multiply with {len(m2)} rows")
+    
+
+    ret = [[None for _ in range(columns)] for _ in range(rows)]
+
+    for i in range(rows):
+        for j in range(columns):
+            print(f"{i}/{rows}, {j}/{columns}")
+            ret[i][j] = complex_v_dot(m1[i], m2t[j])
+
+    return ret
