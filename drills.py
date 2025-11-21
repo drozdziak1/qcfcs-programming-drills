@@ -236,7 +236,7 @@ def complex_m_scalar_mul(a, b, m):
 def complex_m_inverse(m):
     return complex_m_scalar_mul(-1, 0, m)
 
-# Drill 2.2.2
+# Drill 2.2.2 and 2.2.3 (the matmul is generic for matmul(Cmxn, Cnxp))
 def complex_v_dot(v1, v2):
     products_v = complex_v_binary_op(v1, v2, complex_mul)
 
