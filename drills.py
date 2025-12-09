@@ -237,12 +237,9 @@ def complex_m_inverse(m):
     return complex_m_scalar_mul(-1, 0, m)
 
 # Drill 2.2.2 and 2.2.3 (the matmul is generic for matmul(Cmxn, Cnxp))
-def complex_v_dot(v1, v2):
-    products_v = complex_v_binary_op(v1, v2, complex_mul)
-
-    return reduce(lambda accum, prod: complex_add(*accum, *prod), products_v)
 
 def complex_m_transpose(m):
+
     rows = len(m)
 
     if (rows == 0):
@@ -259,10 +256,14 @@ def complex_m_transpose(m):
             ret[j][i] = m[i][j]
 
     return ret
-        
-
 
 def complex_matmul(m1, m2):
+    # Not the canonical inner product in C, but still useful for matrix multiplication
+    def complex_v_dot_no_conjugate(v1, v2):
+        products_v = complex_v_binary_op(v1, v2, complex_mul)
+
+        return reduce(lambda accum, prod: complex_add(*accum, *prod), products_v)
+
     rows = len(m1)
 
     # Transpose for easier dimension verification/column access
@@ -281,6 +282,39 @@ def complex_matmul(m1, m2):
     for i in range(rows):
         for j in range(columns):
             print(f"{i}/{rows}, {j}/{columns}")
-            ret[i][j] = complex_v_dot(m1[i], m2t[j])
+            ret[i][j] = complex_v_dot_no_conjugate(m1[i], m2t[j])
 
     return ret
+
+# Drill 2.4.1
+
+def complex_conjugate(a, b):
+    return (a, -b)
+
+# A.k.a. dagger
+def complex_m_adjoint(m):
+    rows = len(m)
+
+    if (rows == 0):
+        return []
+
+    columns = len(m[0])
+
+    m_conjugate = [[complex_conjugate(*m[i][j]) for j in range(columns)] for i in range(rows)]
+
+    return complex_m_transpose(m_conjugate)
+        
+# A.k.a. dot product, called inner to distinguish from complex_matmul() helper. Note: expects row vectors (regular Python lists)
+def complex_v_inner_product(v1, v2):
+    # Start with column vector to fit the equation in the book
+    v1t = complex_m_transpose([v1])
+
+    # This becomes row vector as expected by the formula
+    v1t_dagger = complex_m_adjoint(v1t)
+
+    # Use column vector to fit the equations in the book
+    v2t = complex_m_transpose([v2])
+
+    return complex_matmul(v1t_dagger, v2t)[0][0] # unwrap the scalar from 1x1
+
+    
