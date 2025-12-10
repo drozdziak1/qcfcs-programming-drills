@@ -281,7 +281,6 @@ def complex_matmul(m1, m2):
 
     for i in range(rows):
         for j in range(columns):
-            print(f"{i}/{rows}, {j}/{columns}")
             ret[i][j] = complex_v_dot_no_conjugate(m1[i], m2t[j])
 
     return ret
