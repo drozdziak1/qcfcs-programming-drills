@@ -317,3 +317,7 @@ def complex_v_inner_product(v1, v2):
     return complex_matmul(v1t_dagger, v2t)[0][0] # unwrap the scalar from 1x1
 
     
+# Drill 2.4.2
+
+def complex_v_norm(v):
+    return math.sqrt(complex_v_inner_product(v, v)[0])
