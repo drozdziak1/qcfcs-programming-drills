@@ -321,3 +321,12 @@ def complex_v_inner_product(v1, v2):
 
 def complex_v_norm(v):
     return math.sqrt(complex_v_inner_product(v, v)[0])
+
+
+# Drill 2.4.3
+
+def complex_v_dist(v1, v2):
+    v2_neg = complex_v_inverse(v2)
+    v_delta = complex_v_add_v(v1, v2_neg)
+
+    return complex_v_norm(v_delta)
