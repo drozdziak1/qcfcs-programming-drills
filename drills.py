@@ -330,3 +330,8 @@ def complex_v_dist(v1, v2):
     v_delta = complex_v_add_v(v1, v2_neg)
 
     return complex_v_norm(v_delta)
+
+# Drill 2.6.1
+
+def complex_m_is_hermitian(m):
+    return complex_m_adjoint(m) == m
