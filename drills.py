@@ -335,3 +335,13 @@ def complex_v_dist(v1, v2):
 
 def complex_m_is_hermitian(m):
     return complex_m_adjoint(m) == m
+
+# Drill 2.6.2
+
+def complex_m_is_unitary(m):
+    m_adj = complex_m_adjoint(m)
+
+    suspected_id = complex_matmul(m, m_adj)
+
+    # The matmul effectively "squares" the suspect identity matrix, and that will only remain unchanged with In.
+    return complex_matmul(suspected_id, suspected_id) == suspected_id
