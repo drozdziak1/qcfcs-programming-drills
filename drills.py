@@ -345,3 +345,23 @@ def complex_m_is_unitary(m):
 
     # The matmul effectively "squares" the suspect identity matrix, and that will only remain unchanged with In.
     return complex_matmul(suspected_id, suspected_id) == suspected_id
+
+# Drill 2.7.2
+
+# a.k.a. Kronecker product
+def complex_m_tensor_product(m1, m2):
+    rows1 = len(m1)
+
+    rows2 = len(m2)
+
+    if rows1 > 0 and rows2 > 0:
+        columns1 = len(m1[0])
+        columns2 = len(m2[0])
+    else:
+        return [[]]
+
+    ret = [[complex_mul(*m1[j // rows2][k // columns2], *m2[j % rows2][k % columns2]) for k in range(columns1 * columns2)] for j in range(rows1 * rows2)]
+
+    return ret
+    
+    
