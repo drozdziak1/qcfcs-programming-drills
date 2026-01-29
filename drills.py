@@ -176,7 +176,7 @@ def complex_pol_div(ro1, th1, ro2, th2):
 # Drill 2.1.1
 
 # Generic for-each with dimension verification
-def complex_v_binary_op(v1, v2, binary_op):
+def v_binary_op(v1, v2, binary_op):
     len1 = len(v1)
     len2 = len(v2)
     if (len1 != len2):
@@ -185,17 +185,22 @@ def complex_v_binary_op(v1, v2, binary_op):
     ret = []
 
     for elem1, elem2 in zip(v1, v2):
-        ret.append(binary_op(*elem1, *elem2))
+        ret.append(binary_op(elem1, elem2))
 
     return ret
 
 def complex_v_add_v(v1, v2):
-    return complex_v_binary_op(v1, v2, complex_add)
+    return v_binary_op(v1, v2, lambda a, b: complex_add(*a, *b))
 
-def complex_v_scalar_mul(a, b, v):
-    mul_vec = [(a, b)] * len(v)
+def v_scalar_binary_op(scalar, v, op):
+    ret = []
+    for elem in v:
+        ret.append(op(scalar, elem))
 
-    return complex_v_binary_op(mul_vec, v, complex_mul)
+    return ret
+
+def complex_v_scalar_mul(scalar_a, scalar_b, v):
+    return v_scalar_binary_op((scalar_a, scalar_b), v, lambda scalar, elem: complex_mul(*scalar, *elem))
 
 def complex_v_inverse(v):
     return complex_v_scalar_mul(-1, 0, v)
@@ -204,7 +209,7 @@ def complex_v_inverse(v):
 # Drill 2.2.1
 
 # Builds on the vector variant, verifies additional dimension
-def complex_m_binary_op(m1, m2, binary_op):
+def m_binary_op(m1, m2, binary_op):
     rows1 = len(m1)
     rows2 = len(m2)
 
@@ -215,7 +220,7 @@ def complex_m_binary_op(m1, m2, binary_op):
 
     for row1, row2 in zip(m1, m2):
         try:
-            ret.append(complex_v_binary_op(row1, row2, binary_op))
+            ret.append(v_binary_op(row1, row2, binary_op))
         except ValueError(msg):
             raise ValueError(f"matrix column count mismatch: {msg}")
 
@@ -223,22 +228,26 @@ def complex_m_binary_op(m1, m2, binary_op):
 
 
 def complex_m_add_m(m1, m2):
-    return complex_m_binary_op(m1, m2, complex_add)
+    return complex_m_binary_op(m1, m2, lambda a, b: complex_add(*a, *b))
 
-def complex_m_scalar_mul(a, b, m):
+# Builds on the vector variant
+def m_scalar_binary_op(scalar, m, op):
     ret = []
-
     for row in m:
-        ret.append(complex_v_scalar_mul(a, b, row))
+        ret.append(v_scalar_binary_op(scalar, row, op))
 
     return ret
+    
+
+def complex_m_scalar_mul(a, b, m):
+    return m_scalar_binary_op((a, b), m, lambda a, b: complex_mul(*a, *b))
 
 def complex_m_inverse(m):
     return complex_m_scalar_mul(-1, 0, m)
 
 # Drill 2.2.2 and 2.2.3 (the matmul is generic for matmul(Cmxn, Cnxp))
 
-def complex_m_transpose(m):
+def m_transpose(m):
 
     rows = len(m)
 
@@ -260,15 +269,15 @@ def complex_m_transpose(m):
 def complex_matmul(m1, m2):
     # Not the canonical inner product in C, but still useful for matrix multiplication
     def complex_v_dot_no_conjugate(v1, v2):
-        products_v = complex_v_binary_op(v1, v2, complex_mul)
+        products_v = v_binary_op(v1, v2, lambda elem1, elem2: complex_mul(*elem1, *elem2))
 
         return reduce(lambda accum, prod: complex_add(*accum, *prod), products_v)
 
     rows = len(m1)
 
     # Transpose for easier dimension verification/column access
-    m1t = complex_m_transpose(m1)
-    m2t = complex_m_transpose(m2)
+    m1t = m_transpose(m1)
+    m2t = m_transpose(m2)
 
     columns = len(m2t)
 
@@ -301,18 +310,18 @@ def complex_m_adjoint(m):
 
     m_conjugate = [[complex_conjugate(*m[i][j]) for j in range(columns)] for i in range(rows)]
 
-    return complex_m_transpose(m_conjugate)
+    return m_transpose(m_conjugate)
         
 # A.k.a. dot product, called inner to distinguish from complex_matmul() helper. Note: expects row vectors (regular Python lists)
 def complex_v_inner_product(v1, v2):
     # Start with column vector to fit the equation in the book
-    v1t = complex_m_transpose([v1])
+    v1t = m_transpose([v1])
 
     # This becomes row vector as expected by the formula
     v1t_dagger = complex_m_adjoint(v1t)
 
     # Use column vector to fit the equations in the book
-    v2t = complex_m_transpose([v2])
+    v2t = m_transpose([v2])
 
     return complex_matmul(v1t_dagger, v2t)[0][0] # unwrap the scalar from 1x1
 
@@ -363,5 +372,71 @@ def complex_m_tensor_product(m1, m2):
     ret = [[complex_mul(*m1[j // rows2][k // columns2], *m2[j % rows2][k % columns2]) for k in range(columns1 * columns2)] for j in range(rows1 * rows2)]
 
     return ret
+
+# Drill 3.1.1
+def bool_matmul(m1, m2):
+
+    def bool_v_dot(v1, v2):
+        products_v = v_binary_op(v1, v2, lambda x, y: x and y)
+
+        return reduce(lambda accum, prod: accum or prod, products_v)
+
+    rows = len(m1)
+
+    # Transpose for easier dimension verification/column access
+    m1t = m_transpose(m1)
+    m2t = m_transpose(m2)
+
+    columns = len(m2t)
+
+
+    if (len(m1t) != len(m2)):
+        raise ValueError(f"Matrix dimension mismatch: {len(m1t)} columns does not multiply with {len(m2)} rows")
     
+
+    ret = [[None for _ in range(columns)] for _ in range(rows)]
+
+    for i in range(rows):
+        for j in range(columns):
+            ret[i][j] = bool_v_dot(m1[i], m2t[j])
+
+    return ret
+
+def real_matmul(m1, m2):
+    def real_v_dot(v1, v2):
+        products_v = v_binary_op(v1, v2, lambda x, y: x * y)
+
+        return sum(products_v)
+
+    rows = len(m1)
+
+    # Transpose for easier dimension verification/column access
+    m1t = m_transpose(m1)
+    m2t = m_transpose(m2)
+
+    columns = len(m2t)
+
+
+    if (len(m1t) != len(m2)):
+        raise ValueError(f"Matrix dimension mismatch: {len(m1t)} columns does not multiply with {len(m2)} rows")
     
+
+    ret = [[None for _ in range(columns)] for _ in range(rows)]
+
+    for i in range(rows):
+        for j in range(columns):
+            ret[i][j] = real_v_dot(m1[i], m2t[j])
+
+    return ret
+
+def bool_state_graph_simulation(bool_m_edges, start_state, n_time_steps=1):
+    edges_n_steps = bool_m_edges
+
+    for _ in range(n_time_steps - 1):
+        edges_n_steps = bool_matmul(edges_n_steps, bool_m_edges)
+
+    real_m_edges_n_steps = m_scalar_binary_op(1, edges_n_steps, lambda scalar, elem: scalar * elem)
+
+    ret = real_matmul(real_m_edges_n_steps, start_state)
+
+    return ret
