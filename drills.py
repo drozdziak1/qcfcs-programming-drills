@@ -238,7 +238,7 @@ def complex_m_inverse(m):
 
 # Drill 2.2.2 and 2.2.3 (the matmul is generic for matmul(Cmxn, Cnxp))
 
-def complex_m_transpose(m):
+def m_transpose(m):
 
     rows = len(m)
 
@@ -267,8 +267,8 @@ def complex_matmul(m1, m2):
     rows = len(m1)
 
     # Transpose for easier dimension verification/column access
-    m1t = complex_m_transpose(m1)
-    m2t = complex_m_transpose(m2)
+    m1t = m_transpose(m1)
+    m2t = m_transpose(m2)
 
     columns = len(m2t)
 
@@ -301,18 +301,18 @@ def complex_m_adjoint(m):
 
     m_conjugate = [[complex_conjugate(*m[i][j]) for j in range(columns)] for i in range(rows)]
 
-    return complex_m_transpose(m_conjugate)
+    return m_transpose(m_conjugate)
         
 # A.k.a. dot product, called inner to distinguish from complex_matmul() helper. Note: expects row vectors (regular Python lists)
 def complex_v_inner_product(v1, v2):
     # Start with column vector to fit the equation in the book
-    v1t = complex_m_transpose([v1])
+    v1t = m_transpose([v1])
 
     # This becomes row vector as expected by the formula
     v1t_dagger = complex_m_adjoint(v1t)
 
     # Use column vector to fit the equations in the book
-    v2t = complex_m_transpose([v2])
+    v2t = m_transpose([v2])
 
     return complex_matmul(v1t_dagger, v2t)[0][0] # unwrap the scalar from 1x1
 
@@ -363,5 +363,56 @@ def complex_m_tensor_product(m1, m2):
     ret = [[complex_mul(*m1[j // rows2][k // columns2], *m2[j % rows2][k % columns2]) for k in range(columns1 * columns2)] for j in range(rows1 * rows2)]
 
     return ret
+
+def bool_v_binary_op(v1, v2, op):
+    len1 = len(v1)
+    len2 = len(v2)
+
+    if (len1 != len2):
+        raise ValueError(f"vector size mismatch: {len1} != {len2}")
+
+    ret = [None for i in range(len1)]
+
+    for i in range(len1):
+        ret[i] = op(v1[i], v2[i])
+
+    return ret
+
+def bool_matmul(m1, m2):
+
+    def bool_v_dot(v1, v2):
+        products_v = bool_v_binary_op(v1, v2, lambda x, y: x and y)
+
+        return reduce(lambda accum, prod: accum or prod, products_v)
+
+    rows = len(m1)
+
+    # Transpose for easier dimension verification/column access
+    m1t = m_transpose(m1)
+    m2t = m_transpose(m2)
+
+    columns = len(m2t)
+
+
+    if (len(m1t) != len(m2)):
+        raise ValueError(f"Matrix dimension mismatch: {len(m1t)} columns does not multiply with {len(m2)} rows")
     
-    
+
+    ret = [[None for _ in range(columns)] for _ in range(rows)]
+
+    for i in range(rows):
+        for j in range(columns):
+            ret[i][j] = bool_v_dot(m1[i], m2t[j])
+
+    return ret
+
+# Drill 3.1.1
+def bool_state_graph_simulation(bool_m_edges, start_state, n_time_steps=1):
+    edges_n_steps = bool_m_edges
+
+    for _ in range(n_time_steps - 1):
+        edges_n_steps = bool_matmul(edges_n_steps, bool_m_edges)
+
+    ret = bool_matmul(edges_n_steps, start_state)
+
+    return ret
