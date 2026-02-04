@@ -26,7 +26,7 @@ def complex_div(a1, b1, a2, b2):
 
     real = (a1 * a2 + b1 * b2) / denom
     imag = (a2 * b1 - a1 * b2) / denom
-    
+
     return (real, imag)
 
 # Drill 1.3.1
@@ -46,12 +46,12 @@ def cart2pol(a, b):
 
     else:
         theta = math.atan(b / a)
-        
+
         # Since atan() gives values between -pi/2 .. pi/2, we need to
         # adjust the offset using the original real and imaginary part's signs.
         if a < 0:
             if b >= 0:
-                theta += math.pi 
+                theta += math.pi
             else:
                 theta -= math.pi
 
@@ -69,7 +69,7 @@ def animate_complex_transform(points, transform=(1, 0), max_graphed_coord=1, n_f
 
     fig, ax = plt.subplots()
     xdata, ydata = [], []
-    
+
     zipped = list(zip(*points))
     scatter = ax.scatter(zipped[0], zipped[1], label="complex datapoints")
     scatter_transform = ax.scatter([1.], [0.], color='r', label="transform")
@@ -110,7 +110,7 @@ def animate_complex_transform(points, transform=(1, 0), max_graphed_coord=1, n_f
 
         # Note: Each partial transform is represented in polar. Polar
         # coordinates fully separate scaling and rotation, which
-        # cannot be said for Cartesian representation. 
+        # cannot be said for Cartesian representation.
         if frame_no < frames_per_stage:
             # Show start state using trivial transform
             partial_transform_polar = (1, 0)
@@ -141,11 +141,11 @@ def animate_complex_transform(points, transform=(1, 0), max_graphed_coord=1, n_f
         frame.append(partial_transform)
         frames.append(frame)
 
-            
+
     ani = FuncAnimation(fig, update, frames=frames, init_func=init, blit=True)
 
     plt.show()
-            
+
 
 
 # Run this to just see animate_complex_transform in action
@@ -157,9 +157,9 @@ def demo_complex_transform(n_points=10, span=10, transform_max_scale=3, custom_p
             a = random.random() * span - span / 2
             b = random.random() * span - span / 2
             points.append((a, b))
-    
+
     transform_polar_ro = cart2pol(*custom_transform)[0] if custom_transform is not None else (random.random() * 2 * transform_max_scale - transform_max_scale)
-    transform_polar_theta = cart2pol(*custom_transform)[1] if custom_transform is not None else (random.random() * 4 * math.pi - 2 * math.pi) 
+    transform_polar_theta = cart2pol(*custom_transform)[1] if custom_transform is not None else (random.random() * 4 * math.pi - 2 * math.pi)
 
     transform = pol2cart(transform_polar_ro, transform_polar_theta) if custom_transform is None else custom_transform
 
@@ -221,14 +221,14 @@ def m_binary_op(m1, m2, binary_op):
     for row1, row2 in zip(m1, m2):
         try:
             ret.append(v_binary_op(row1, row2, binary_op))
-        except ValueError(msg):
+        except ValueError as msg:
             raise ValueError(f"matrix column count mismatch: {msg}")
 
     return ret
 
 
 def complex_m_add_m(m1, m2):
-    return complex_m_binary_op(m1, m2, lambda a, b: complex_add(*a, *b))
+    return m_binary_op(m1, m2, lambda a, b: complex_add(*a, *b))
 
 # Builds on the vector variant
 def m_scalar_binary_op(scalar, m, op):
@@ -237,7 +237,7 @@ def m_scalar_binary_op(scalar, m, op):
         ret.append(v_scalar_binary_op(scalar, row, op))
 
     return ret
-    
+
 
 def complex_m_scalar_mul(a, b, m):
     return m_scalar_binary_op((a, b), m, lambda a, b: complex_mul(*a, *b))
@@ -253,7 +253,7 @@ def m_transpose(m):
 
     if (rows == 0):
         return []
-    
+
     columns = len(m[0])
 
     # Note: ret has inverted indices, thus rows are used for columns
@@ -284,7 +284,7 @@ def complex_matmul(m1, m2):
 
     if (len(m1t) != len(m2)):
         raise ValueError(f"Matrix dimension mismatch: {len(m1t)} columns does not multiply with {len(m2)} rows")
-    
+
 
     ret = [[None for _ in range(columns)] for _ in range(rows)]
 
@@ -311,7 +311,7 @@ def complex_m_adjoint(m):
     m_conjugate = [[complex_conjugate(*m[i][j]) for j in range(columns)] for i in range(rows)]
 
     return m_transpose(m_conjugate)
-        
+
 # A.k.a. dot product, called inner to distinguish from complex_matmul() helper. Note: expects row vectors (regular Python lists)
 def complex_v_inner_product(v1, v2):
     # Start with column vector to fit the equation in the book
@@ -325,7 +325,7 @@ def complex_v_inner_product(v1, v2):
 
     return complex_matmul(v1t_dagger, v2t)[0][0] # unwrap the scalar from 1x1
 
-    
+
 # Drill 2.4.2
 
 def complex_v_norm(v):
@@ -374,6 +374,32 @@ def complex_m_tensor_product(m1, m2):
     return ret
 
 # Drill 3.1.1
+def validate_bool_edge_matrix(m):
+    if m == [[]] or m == []:
+        return
+
+    m_rows = len(m)
+    m_columns = len(m[0])
+
+    if m_rows != m_columns:
+        raise ValueError(f"Edge matrix must be square - {m_rows}x{m_columns} received")
+
+    # Transpose for easier checking of the columns, convert to real 0/1s
+    m_t_real = m_scalar_binary_op(1, m_transpose(m), lambda scalar, elem: scalar * elem)
+
+    errors = ""
+
+    # Validate exactly one True value per column of m
+    for idx, column in enumerate(m_t_real):
+        col_sum = sum(column)
+        if col_sum != 1:
+            errors += f"Column {idx}: Exactly one True value required, {col_sum} found\n"
+
+    if errors != "":
+        raise ValueError(errors)
+
+    return
+
 def bool_matmul(m1, m2):
 
     def bool_v_dot(v1, v2):
@@ -392,7 +418,7 @@ def bool_matmul(m1, m2):
 
     if (len(m1t) != len(m2)):
         raise ValueError(f"Matrix dimension mismatch: {len(m1t)} columns does not multiply with {len(m2)} rows")
-    
+
 
     ret = [[None for _ in range(columns)] for _ in range(rows)]
 
@@ -419,7 +445,7 @@ def real_matmul(m1, m2):
 
     if (len(m1t) != len(m2)):
         raise ValueError(f"Matrix dimension mismatch: {len(m1t)} columns does not multiply with {len(m2)} rows")
-    
+
 
     ret = [[None for _ in range(columns)] for _ in range(rows)]
 
@@ -430,6 +456,12 @@ def real_matmul(m1, m2):
     return ret
 
 def bool_state_graph_simulation(bool_m_edges, start_state, n_time_steps=1):
+
+    try:
+        validate_bool_edge_matrix(bool_m_edges)
+    except ValueError as msg:
+        raise ValueError(f"Invalid graph edge matrix: {msg}")
+
     edges_n_steps = bool_m_edges
 
     for _ in range(n_time_steps - 1):
